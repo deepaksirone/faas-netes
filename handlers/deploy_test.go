@@ -94,7 +94,7 @@ func Test_SetNonRootUser(t *testing.T) {
 				ReadinessProbe: &k8s.ProbeConfig{},
 				SetNonRootUser: s.setNonRoot,
 			})
-			deployment, err := makeDeploymentSpec(request, map[string]*apiv1.Secret{}, factory)
+			deployment, err := makeDeploymentSpec(request, map[string]*apiv1.Secret{}, factory, "default")
 			if err != nil {
 				t.Errorf("unexpected makeDeploymentSpec error: %s", err.Error())
 			}

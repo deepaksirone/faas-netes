@@ -79,6 +79,11 @@ func runController(kubeconfig, masterURL string) {
 		functionNamespace = namespace
 	}
 
+	runtimeClassName := "default"
+	if classname, exists := os.LookupEnv("runtime_class"); exists {
+		runtimeClassName = classname
+	}
+
 	readConfig := types.ReadConfig{}
 	osEnv := providertypes.OsEnv{}
 	cfg, err := readConfig.Read(osEnv)
@@ -129,7 +134,7 @@ func runController(kubeconfig, masterURL string) {
 	bootstrapHandlers := providertypes.FaaSHandlers{
 		FunctionProxy:        proxy.NewHandlerFunc(cfg.FaaSConfig, functionLookup),
 		DeleteHandler:        handlers.MakeDeleteHandler(functionNamespace, clientset),
-		DeployHandler:        handlers.MakeDeployHandler(functionNamespace, factory),
+		DeployHandler:        handlers.MakeDeployHandler(functionNamespace, factory, runtimeClassName),
 		FunctionReader:       handlers.MakeFunctionReader(functionNamespace, clientset),
 		ReplicaReader:        handlers.MakeReplicaReader(functionNamespace, clientset),
 		ReplicaUpdater:       handlers.MakeReplicaUpdater(functionNamespace, clientset),

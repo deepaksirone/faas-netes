@@ -28,7 +28,7 @@ import (
 const initialReplicasCount = 1
 
 // MakeDeployHandler creates a handler to create new functions in the cluster
-func MakeDeployHandler(functionNamespace string, factory k8s.FunctionFactory) http.HandlerFunc {
+func MakeDeployHandler(functionNamespace string, factory k8s.FunctionFactory, runtimeClass string) http.HandlerFunc {
 	secrets := k8s.NewSecretsClient(factory.Client)
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +65,7 @@ func MakeDeployHandler(functionNamespace string, factory k8s.FunctionFactory) ht
 			return
 		}
 
-		deploymentSpec, specErr := makeDeploymentSpec(request, existingSecrets, factory)
+		deploymentSpec, specErr := makeDeploymentSpec(request, existingSecrets, factory, runtimeClass)
 
 		if specErr != nil {
 			wrappedErr := fmt.Errorf("failed create Deployment spec: %s", specErr.Error())
@@ -104,7 +104,7 @@ func MakeDeployHandler(functionNamespace string, factory k8s.FunctionFactory) ht
 	}
 }
 
-func makeDeploymentSpec(request types.FunctionDeployment, existingSecrets map[string]*apiv1.Secret, factory k8s.FunctionFactory) (*appsv1.Deployment, error) {
+func makeDeploymentSpec(request types.FunctionDeployment, existingSecrets map[string]*apiv1.Secret, factory k8s.FunctionFactory, runtimeClass string) (*appsv1.Deployment, error) {
 	envVars := buildEnvVars(&request)
 
 	initialReplicas := int32p(initialReplicasCount)
@@ -155,6 +155,10 @@ func makeDeploymentSpec(request types.FunctionDeployment, existingSecrets map[st
 		return nil, err
 	}
 
+	var className *string
+	if runtimeClass != "default" {
+		className = &runtimeClass
+	}
 	deploymentSpec := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        request.Service,
@@ -210,6 +214,7 @@ func makeDeploymentSpec(request types.FunctionDeployment, existingSecrets map[st
 						},
 					},
 					ServiceAccountName: serviceAccount,
+					RuntimeClassName:   className,
 					RestartPolicy:      corev1.RestartPolicyAlways,
 					DNSPolicy:          corev1.DNSClusterFirst,
 				},
